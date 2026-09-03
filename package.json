@@ -1,0 +1,16 @@
+{
+  "name": "smart-campus-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cloud-Native Smart Campus Service Platform - microservices monorepo",
+  "workspaces": [
+    "services/*"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
