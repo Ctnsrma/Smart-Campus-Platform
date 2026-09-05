@@ -1,0 +1,11 @@
+{
+  "name": "@smart-campus/auth-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Registration, login, JWT issuance, RBAC",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "echo \"dev script not set up yet\"",
+    "build": "echo \"build script not set up yet\""
+  }
+}
