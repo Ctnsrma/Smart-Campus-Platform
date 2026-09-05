@@ -5,7 +5,8 @@
   "description": "Registration, login, JWT issuance, RBAC",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "echo \"dev script not set up yet\"",
-    "build": "echo \"build script not set up yet\""
-  }
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
+    }
 }
