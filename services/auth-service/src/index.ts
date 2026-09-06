@@ -4,6 +4,7 @@ import { db } from "./db/client";
 import { users } from "./db/schema"; 
 import { hashPassword } from "./utils/password";
 import { eq } from "drizzle-orm";
+import { registerSchema } from "./validation/schemas";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -19,7 +20,12 @@ app.get('/health',(_req: Request,res: Response)=>{
 });
 
 app.post("/auth/register", async (req:Request,res:Response)=>{
-    const {email,password} = req.body;
+    const parsed = registerSchema.safeParse(req.body);
+    if(!parsed.success){
+        res.status(400).json({error: `Invalid Input`,details: parsed.error.flatten()})
+        return;
+    }
+    const {email,password} = parsed.data;
     if(!email || !password){
         res.status(400).json({error : `email and password required`});
         return;
