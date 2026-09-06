@@ -1,13 +1,14 @@
 import "dotenv/config";
 import express, {Request,Response} from "express";
-import {Pool} from "pg";
+import { db } from "./db/client";
+import { users } from "./db/schema"; 
+import { hashPassword } from "./utils/password";
+import { eq } from "drizzle-orm";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-})
+app.use(express.json());
 
 app.get('/health',(_req: Request,res: Response)=>{
     res.status(200).json({
@@ -17,20 +18,29 @@ app.get('/health',(_req: Request,res: Response)=>{
     });
 });
 
-app.get("/db-check", async (_req: Request,res: Response)=>{
-    try {
-        const result = await pool.query("SELECT NOW() AS curent_time");
-        res.status(200).json({
-            dbConnected: true,
-            currentTime: result.rows[0].current_time
-        });
-    } catch (error) {
-        res.status(500).json({
-            dbConnected: false,
-            error: (error as Error).message
-        });
+app.post("/auth/register", async (req:Request,res:Response)=>{
+    const {email,password} = req.body;
+    if(!email || !password){
+        res.status(400).json({error : `email and password required`});
+        return;
     }
+    const existing = await db.select().from(users).where(eq(users.email,email)).limit(1);
+
+    if(existing.length > 0){
+        res.status(409).json({error: `An Account with this email ${email} already exists`});
+        return;
+    }
+
+    const passwordHash = await hashPassword(password);
+
+    const [created] = await db
+    .insert(users)
+    .values({email,passwordHash})
+    .returning({id: users.id, email: users.email, role: users.role});
+
+    res.status(201).json({user : created});
 });
+
 
 app.listen(PORT,()=>{
     console.log(`[auth-service] listening on port ${PORT}`);
