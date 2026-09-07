@@ -9,6 +9,7 @@ import { authRateLimiter } from "./middleware/rateLimit";
 import { loginSchema } from "./validation/schemas";
 import { verifyPassword } from "./utils/password";
 import { signAccessToken } from "./utils/tokens";
+import { requireAuth, AuthenticatedRequest } from "./middleware/auth";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -74,6 +75,9 @@ app.post("/auth/login", authRateLimiter, async (req:Request,res:Response)=>{
     });
 });
 
+app.get("/auth/me", requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  res.status(200).json({ user: req.user });
+});
 
 app.listen(PORT,()=>{
     console.log(`[auth-service] listening on port ${PORT}`);
