@@ -8,6 +8,13 @@
       "when": 1788631760377,
       "tag": "0000_classy_justice",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788770882948,
+      "tag": "0001_huge_tusk",
+      "breakpoints": true
     }
   ]
 }
