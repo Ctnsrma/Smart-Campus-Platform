@@ -6,6 +6,9 @@ import { hashPassword } from "./utils/password";
 import { eq } from "drizzle-orm";
 import { registerSchema } from "./validation/schemas";
 import { authRateLimiter } from "./middleware/rateLimit";
+import { loginSchema } from "./validation/schemas";
+import { verifyPassword } from "./utils/password";
+import { signAccessToken } from "./utils/tokens";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -46,6 +49,29 @@ app.post("/auth/register", authRateLimiter, async (req:Request,res:Response)=>{
     .returning({id: users.id, email: users.email, role: users.role});
 
     res.status(201).json({user : created});
+});
+
+app.post("/auth/login", authRateLimiter, async (req:Request,res:Response)=>{
+    const parsed = loginSchema.safeParse(req.body);
+    if(!parsed.success){
+        res.status(400).json({error: 'Invalid Input',details: parsed.error.flatten()});
+        return;
+    }
+    const {email,password} = parsed.data;
+    const [user] = await db.select().from(users).where(eq(users.email,email)).limit(1);
+    if(!user || !(await verifyPassword(password,user.passwordHash))){
+        res.status(401).json({error: "Invalid email or password"});
+        return;
+    }  
+    const accessToken = signAccessToken({
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+    });
+    res.status(200).json({
+        accessToken,
+        user: {id: user.id,email: user.email,role: user.role},
+    });
 });
 
 
