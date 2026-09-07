@@ -7,7 +7,7 @@ import { signAccessToken } from "./utils/tokens";
 import { eq } from "drizzle-orm";
 import { registerSchema, loginSchema } from "./validation/schemas";
 import { authRateLimiter } from "./middleware/rateLimit";
-import { requireAuth, AuthenticatedRequest } from "./middleware/auth";
+import { requireAuth, requireRole, AuthenticatedRequest } from "./middleware/auth";
 import { refreshTokens } from "./db/schema";
 import { generateRefreshTokenValue, hashRefreshToken, refreshTokenExpiryDate} from "./utils/refreshTokens";
 
