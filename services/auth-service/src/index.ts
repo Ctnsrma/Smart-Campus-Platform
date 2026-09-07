@@ -1,84 +1,8 @@
-import "dotenv/config";
-import express, {Request,Response} from "express";
-import { db } from "./db/client";
-import { users } from "./db/schema"; 
-import { hashPassword } from "./utils/password";
-import { eq } from "drizzle-orm";
-import { registerSchema } from "./validation/schemas";
-import { authRateLimiter } from "./middleware/rateLimit";
-import { loginSchema } from "./validation/schemas";
-import { verifyPassword } from "./utils/password";
-import { signAccessToken } from "./utils/tokens";
-import { requireAuth, AuthenticatedRequest } from "./middleware/auth";
+import { createApp } from "./app";
 
-const app = express();
+const app = createApp();
 const PORT = process.env.PORT || 3001;
 
-app.use(express.json());
-
-app.get('/health',(_req: Request,res: Response)=>{
-    res.status(200).json({
-        status: "OK",
-        service: "auth-service",
-        timestamp: new Date().toISOString(), 
-    });
-});
-
-app.post("/auth/register", authRateLimiter, async (req:Request,res:Response)=>{
-    const parsed = registerSchema.safeParse(req.body);
-    if(!parsed.success){
-        res.status(400).json({error: `Invalid Input`,details: parsed.error.flatten()})
-        return;
-    }
-    const {email,password} = parsed.data;
-    if(!email || !password){
-        res.status(400).json({error : `email and password required`});
-        return;
-    }
-    const existing = await db.select().from(users).where(eq(users.email,email)).limit(1);
-
-    if(existing.length > 0){
-        res.status(409).json({error: `An Account with this email ${email} already exists`});
-        return;
-    }
-
-    const passwordHash = await hashPassword(password);
-
-    const [created] = await db
-    .insert(users)
-    .values({email,passwordHash})
-    .returning({id: users.id, email: users.email, role: users.role});
-
-    res.status(201).json({user : created});
-});
-
-app.post("/auth/login", authRateLimiter, async (req:Request,res:Response)=>{
-    const parsed = loginSchema.safeParse(req.body);
-    if(!parsed.success){
-        res.status(400).json({error: 'Invalid Input',details: parsed.error.flatten()});
-        return;
-    }
-    const {email,password} = parsed.data;
-    const [user] = await db.select().from(users).where(eq(users.email,email)).limit(1);
-    if(!user || !(await verifyPassword(password,user.passwordHash))){
-        res.status(401).json({error: "Invalid email or password"});
-        return;
-    }  
-    const accessToken = signAccessToken({
-        sub: user.id,
-        email: user.email,
-        role: user.role,
-    });
-    res.status(200).json({
-        accessToken,
-        user: {id: user.id,email: user.email,role: user.role},
-    });
-});
-
-app.get("/auth/me", requireAuth, (req: AuthenticatedRequest, res: Response) => {
-  res.status(200).json({ user: req.user });
-});
-
-app.listen(PORT,()=>{
-    console.log(`[auth-service] listening on port ${PORT}`);
+app.listen(PORT, () => {
+  console.log(`[auth-service] listening on port ${PORT}`);
 });
