@@ -1,4 +1,4 @@
-# Student Service — Implementation Documentation
+# Student Service - Implementation Documentation
 
 ## Notable Issues Encountered and Resolved
 
@@ -14,7 +14,7 @@ and finally running the generated `.sql` file directly with `psql -f`).
 manually created (a required one-time setup step, mirroring
 `auth-service`'s Step 31/44 setup) *before* running the migration. The
 migration's first statement, `CREATE SCHEMA "student_service"`, then
-failed with "schema already exists" — and this specific version of
+failed with "schema already exists" - and this specific version of
 `drizzle-kit` (`0.31.10`) aborts silently on this error rather than
 reporting it or continuing, and does not record the migration as applied
 in `drizzle.__drizzle_migrations`.
@@ -30,7 +30,7 @@ correctly recognize this migration as already applied.
 
 **Process improvement adopted:** going forward, do not manually
 pre-create a service's Postgres schema before running its first
-migration — let `drizzle-kit migrate` create the schema itself as part
+migration - let `drizzle-kit migrate` create the schema itself as part
 of the first migration, exactly as it's designed to do. The manual
 schema-creation step from the original setup pattern (Step 31) should
 only be used for verifying schema *ownership*/permissions ahead of time
@@ -61,7 +61,7 @@ student_service.students ...` and no further detail, when using the
 
 **Root cause:** running the migration as the `postgres` superuser made
 `postgres` the *owner* of the newly created table. PostgreSQL grants no
-implicit permissions to other roles on a table — not even `SELECT` — so the
+implicit permissions to other roles on a table - not even `SELECT` - so the
 application's `smart_campus` role had zero access to a table that visibly
 existed in the schema.
 
@@ -73,5 +73,5 @@ application's own connection string in the first place.
 **Process improvement adopted:** if a migration ever needs to be run
 manually as a workaround, it must be run using the **same database role
 the application itself connects as** (`smart_campus`, from
-`DATABASE_URL`) — never the `postgres` superuser — specifically to avoid
+`DATABASE_URL`) - never the `postgres` superuser - specifically to avoid
 this class of ownership/permission mismatch.
