@@ -49,3 +49,29 @@ unrelated services' migration files is effectively impossible), but it
 is a real, documented limitation of the cost-saving shared-instance
 architecture, worth noting as a discussion point on deployment
 trade-offs.
+
+
+### Table created with wrong owner after manual migration workaround
+
+**Symptom:** after resolving the silent migration failure (above) by running
+the migration SQL manually via `psql -U postgres -f ...`, the application
+itself failed at runtime with `Failed query: select ... from
+student_service.students ...` and no further detail, when using the
+`smart_campus` application role's credentials.
+
+**Root cause:** running the migration as the `postgres` superuser made
+`postgres` the *owner* of the newly created table. PostgreSQL grants no
+implicit permissions to other roles on a table — not even `SELECT` — so the
+application's `smart_campus` role had zero access to a table that visibly
+existed in the schema.
+
+**Resolution:** `ALTER TABLE student_service.students OWNER TO
+smart_campus;`, restoring the table to the ownership state it would have
+had if the migration had run successfully through drizzle-kit using the
+application's own connection string in the first place.
+
+**Process improvement adopted:** if a migration ever needs to be run
+manually as a workaround, it must be run using the **same database role
+the application itself connects as** (`smart_campus`, from
+`DATABASE_URL`) — never the `postgres` superuser — specifically to avoid
+this class of ownership/permission mismatch.
