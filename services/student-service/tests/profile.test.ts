@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { getTestToken } from "../src/utils/testAuth";
 import { db, pool } from "../src/db/client";
 import { students } from "../src/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 const testEmail = "integration.student@example.com";
 const testPassword = "correct-horse-battery";
@@ -25,7 +25,11 @@ beforeAll(async () => {
 afterAll(async () => {
   if (userId) {
     await db.delete(students).where(eq(students.userId, userId));
-    await db.execute(sql`DELETE FROM auth_service.users WHERE id = ${userId}`);
+
+    await fetch("http://localhost:3001/auth/me", {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
   }
   await pool.end();
 });

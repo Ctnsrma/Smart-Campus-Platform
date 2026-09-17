@@ -77,8 +77,6 @@ the application itself connects as** (`smart_campus`, from
 this class of ownership/permission mismatch.
 
 
-
-
 ### Cross-service integration tests need cross-service cleanup
 
 **Symptom:** `student-service`'s integration test for `POST /students/profile`
@@ -109,3 +107,11 @@ safely does nothing if setup never completed.
 **Follow-up noted for later:** once `auth-service` gains a real
 delete-account or admin user-management endpoint, this test's cleanup
 should be switched to use that instead of direct cross-schema SQL access.
+
+
+**Update:** resolved in a later step — `auth-service` now exposes
+`DELETE /auth/me` (self-service account deletion, using the caller's own
+token, with `ON DELETE CASCADE` automatically removing associated refresh
+tokens). This test's `afterAll` has been updated to call that real HTTP
+endpoint instead of reaching directly into `auth_service`'s schema, fully
+restoring proper service boundary separation.
