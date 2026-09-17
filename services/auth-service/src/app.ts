@@ -125,5 +125,11 @@ export function createApp() {
     res.status(200).json({ user: req.user });
   });
 
+  app.delete("/auth/me",requireAuth, async (req: AuthenticatedRequest,res: Response)=>{
+    const userId = req.user!.sub;
+    await db.delete(users).where(eq(users.id, userId));
+    res.status(204).send();
+  })
+
   return app;
 }
