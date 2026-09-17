@@ -75,3 +75,37 @@ manually as a workaround, it must be run using the **same database role
 the application itself connects as** (`smart_campus`, from
 `DATABASE_URL`) - never the `postgres` superuser - specifically to avoid
 this class of ownership/permission mismatch.
+
+
+
+
+### Cross-service integration tests need cross-service cleanup
+
+**Symptom:** `student-service`'s integration test for `POST /students/profile`
+worked on its first run, but failed on every subsequent run with a `409`
+during `beforeAll`'s setup step (registering a fresh test user via
+`auth-service`).
+
+**Root cause:** the test's `afterAll` only deleted the created row from
+`student_service.students`, but the test user account itself lives in
+`auth_service.users` — a completely different service's data. Since
+`auth-service` does not yet expose a delete-account endpoint, that user
+row was never cleaned up, so the *second* test run's registration attempt
+correctly failed with `409 Conflict` (email already exists).
+
+**Resolution:** `afterAll` now also deletes the corresponding row directly
+from `auth_service.users`, via a raw SQL query (`db.execute(sql\`...\`)`),
+explicitly commented as a temporary exception to the "services own their
+own data" rule — justified only because it is test-cleanup code with no
+HTTP alternative available yet, not application logic.
+
+**Secondary bug found and fixed:** the initial version of this cleanup
+crashed with a Postgres syntax error when `beforeAll` itself had already
+failed (e.g., during debugging), because `userId` was never assigned in
+that case, producing a malformed `DELETE ... WHERE id = ` query. Fixed by
+guarding the entire `afterAll` body with `if (userId) { ... }`, so cleanup
+safely does nothing if setup never completed.
+
+**Follow-up noted for later:** once `auth-service` gains a real
+delete-account or admin user-management endpoint, this test's cleanup
+should be switched to use that instead of direct cross-schema SQL access.
