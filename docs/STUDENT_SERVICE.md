@@ -88,15 +88,15 @@ during `beforeAll`'s setup step (registering a fresh test user via
 
 **Root cause:** the test's `afterAll` only deleted the created row from
 `student_service.students`, but the test user account itself lives in
-`auth_service.users` — a completely different service's data. Since
+`auth_service.users` - a completely different service's data. Since
 `auth-service` does not yet expose a delete-account endpoint, that user
 row was never cleaned up, so the *second* test run's registration attempt
 correctly failed with `409 Conflict` (email already exists).
 
 **Resolution:** `afterAll` now also deletes the corresponding row directly
-from `auth_service.users`, via a raw SQL query (`db.execute(sql\`...\`)`),
+from `auth_service.users`, via a raw SQL query (`db.execute(sql\`...\`)`,
 explicitly commented as a temporary exception to the "services own their
-own data" rule — justified only because it is test-cleanup code with no
+own data" rule - justified only because it is test-cleanup code with no
 HTTP alternative available yet, not application logic.
 
 **Secondary bug found and fixed:** the initial version of this cleanup
