@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "dotenv/config"; 
 import {defineConfig} from "drizzle-kit";
 
 if(!process.env.DATABASE_URL){
@@ -12,5 +12,5 @@ export default defineConfig({
     dbCredentials: {
         url: process.env.DATABASE_URL,
     },
-    schemaFilter: ["student_service"],
+    schemaFilter: ["attendance_service"],
 })
