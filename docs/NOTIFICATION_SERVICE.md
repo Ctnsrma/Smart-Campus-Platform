@@ -67,3 +67,40 @@ accurate student ID, percentage, and generated message text. This
 constitutes concrete, verified proof of the platform's core asynchronous
 architecture claim: two services with no direct network dependency on
 each other correctly cooperate via RabbitMQ alone.
+
+## Automated End-to-End Test
+
+A single automated integration test (`notification.e2e.test.ts`) now
+covers the full chain previously only verified manually: registers real
+FACULTY and STUDENT test accounts via Auth Service, marks the student
+ABSENT twice via a real HTTP call to Attendance Service, then polls
+Notification Service's own database until the resulting notification row
+appears (rather than checking immediately, which would be unreliable —
+see below), and asserts on its content.
+
+### Testing an Asynchronous Flow
+
+Unlike every previous integration test in this project, this test cannot
+check its outcome immediately after the triggering HTTP call returns.
+Attendance Service's HTTP response only confirms that publishing to
+RabbitMQ succeeded — it provides no guarantee that Notification Service
+has already consumed and processed that message by the time the response
+is received, since consumption happens on a separate, independent
+timeline. A generic `waitFor()` helper (poll every 200ms, up to a 5
+second timeout) was written to handle this correctly: it repeatedly
+checks the database until the expected row appears or the timeout is
+reached, which is the standard, correct way to test eventually-consistent
+asynchronous systems, rather than a workaround for a flaw in the design.
+
+### A Recurring Bug Class: Invalid Test UUIDs
+
+While writing this test, the same class of bug encountered in earlier
+manual testing (hand-typed placeholder UUIDs like
+`"22222222-2222-2222-2222-222222222222"` failing Zod's `.uuid()`
+validation, because the UUID specification's variant bit requires the
+fourth group to start with 8, 9, a, or b) recurred. This was resolved
+structurally rather than by hand-correcting the specific value: test
+UUIDs are now generated with Node's built-in `crypto.randomUUID()`,
+which always produces a specification-valid UUID, making this class of
+error impossible going forward rather than something to remember to get
+right each time.
