@@ -82,3 +82,19 @@ confirmed to reliably reset the arrival-order bug, confirmed genuinely
 fixed only after both corrections above, with final state matching hand
 calculation exactly: total_marked=3, total_present=1,
 last_attendance_percentage=33%.
+
+
+## Test Validity Confirmed
+
+The regression test in `tests/upsert.test.ts` was deliberately verified
+against the original buggy select-then-branch implementation before being
+finalized: reverting the upsert logic caused the test to fail with the
+exact `duplicate key value violates unique constraint` error observed in
+production (Step 230 of the development log), confirming the test
+genuinely detects this specific bug rather than passing trivially.
+Interestingly, the 10-concurrent-writes test did not reliably fail against
+the buggy version, while the simpler 2-concurrent-inserts-to-a-new-row
+test did — a reminder that more simultaneous operations does not
+necessarily make a race condition easier to trigger deterministically;
+the narrowest reproduction (two writers racing to create the same
+first row) proved the more reliable regression test.
