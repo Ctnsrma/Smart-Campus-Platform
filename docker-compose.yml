@@ -8,7 +8,9 @@ services:
     env_file:
       - services/auth-service/.env
     environment:
-      DATABASE_URL: postgres://smart_campus:smart_campus_dev_password@host.docker.internal:5432/smart_campus?schema=auth_service
+      DATABASE_URL: postgres://smart_campus:smart_campus_dev_password@postgres:5432/smart_campus?schema=auth_service
+    depends_on:
+      - postgres
 
   student-service:
     build:
@@ -19,7 +21,9 @@ services:
     env_file:
       - services/student-service/.env
     environment:
-      DATABASE_URL: postgres://smart_campus:smart_campus_dev_password@host.docker.internal:5432/smart_campus?schema=student_service
+      DATABASE_URL: postgres://smart_campus:smart_campus_dev_password@postgres:5432/smart_campus?schema=student_service
+    depends_on:
+      - postgres
 
   course-service:
     build:
@@ -30,7 +34,9 @@ services:
     env_file:
       - services/course-service/.env
     environment:
-      DATABASE_URL: postgres://smart_campus:smart_campus_dev_password@host.docker.internal:5432/smart_campus?schema=course_service
+      DATABASE_URL: postgres://smart_campus:smart_campus_dev_password@postgres:5432/smart_campus?schema=course_service
+    depends_on:
+      - postgres
 
   attendance-service:
     build:
@@ -41,8 +47,13 @@ services:
     env_file:
       - services/attendance-service/.env
     environment:
-      DATABASE_URL: postgres://smart_campus:smart_campus_dev_password@host.docker.internal:5432/smart_campus?schema=attendance_service
-      RABBITMQ_URL: amqp://guest:guest@host.docker.internal:5672
+      DATABASE_URL: postgres://smart_campus:smart_campus_dev_password@postgres:5432/smart_campus?schema=attendance_service
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   notification-service:
     build:
@@ -53,8 +64,13 @@ services:
     env_file:
       - services/notification-service/.env
     environment:
-      DATABASE_URL: postgres://smart_campus:smart_campus_dev_password@host.docker.internal:5432/smart_campus?schema=notification_service
-      RABBITMQ_URL: amqp://guest:guest@host.docker.internal:5672
+      DATABASE_URL: postgres://smart_campus:smart_campus_dev_password@postgres:5432/smart_campus?schema=notification_service
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   analytics-service:
     build:
@@ -65,8 +81,13 @@ services:
     env_file:
       - services/analytics-service/.env
     environment:
-      DATABASE_URL: postgres://smart_campus:smart_campus_dev_password@host.docker.internal:5432/smart_campus?schema=analytics_service
-      RABBITMQ_URL: amqp://guest:guest@host.docker.internal:5672
+      DATABASE_URL: postgres://smart_campus:smart_campus_dev_password@postgres:5432/smart_campus?schema=analytics_service
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   api-gateway:
     build:
@@ -86,3 +107,27 @@ services:
       - student-service
       - course-service
       - attendance-service
+    
+  postgres:
+    image: postgres:16    # image: postgres:16 instead of build: ... — tells Compose "pull this pre-built image from Docker Hub," rather than building one from a Dockerfile we wrote
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
+volumes:
+  postgres_data:

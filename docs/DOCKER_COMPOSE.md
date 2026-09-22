@@ -97,3 +97,78 @@ returned to zero once the backlog fully drained.
 All seven services built successfully and started together via
 `docker compose up`, correctly reaching Postgres and RabbitMQ on the host
 machine and each other by Compose-assigned service hostnames.
+
+
+## Full Containerization: Postgres and RabbitMQ
+
+Following the plan from the earlier "Known Limitation" section, PostgreSQL
+and RabbitMQ were containerized and added to docker-compose.yml, using
+official images (postgres:16, rabbitmq:3-management) rather than custom
+Dockerfiles, since neither requires any project-specific build step.
+Postgres uses a named volume (postgres_data) to persist data independently
+of the container's own lifecycle - without this, all data would be lost
+the moment the container is removed or recreated.
+
+### Migrating Existing Data into the New Container
+
+Rather than starting with an empty database, the real data accumulated
+across months of development (real registered test accounts, all seven
+services' migration history) was preserved via `pg_dumpall`, restored
+into the new container.
+
+**Encoding issue:** an initial dump created via PowerShell's `>` redirection
+operator was corrupted by an unwanted UTF-16 byte-order-mark, causing
+`psql` to fail parsing the very first line. Resolved by using
+`pg_dumpall`'s own `--file=` option instead, which writes the file directly
+in the correct encoding, bypassing PowerShell's redirection behaviour
+entirely.
+
+**Cross-platform locale incompatibility:** the dump's `CREATE DATABASE`
+statement specified a Windows-specific locale (`English_India.1252`),
+which the Linux-based Postgres container could not recognise. Resolved by
+manually editing the dump file to use `en_US.utf8`, a Postgres locale name
+compatible with the Linux locale database bundled in the official image.
+
+**Server-level vs database-level objects:** `pg_dumpall` (used instead of
+`pg_dump`, specifically because it captures role definitions - a
+server-level object - which a single-database `pg_dump` would not
+include) correctly reproduced the `smart_campus` role and database from a
+single file, with no separate manual role-creation step required.
+
+**Host/container port ambiguity during migration:** the containerized
+Postgres was temporarily mapped to host port 5433 (rather than the
+standard 5432) specifically to guarantee an unambiguous target during the
+migration, since the pre-existing host-installed Postgres was still
+running on 5432 throughout. On Windows specifically, Docker Desktop's
+port publishing did not produce a conflict error even when a host process
+already held port 5432, making this precaution necessary to verify with
+certainty which server a given connection was actually reaching, rather
+than assuming.
+
+Data integrity was verified directly after restore by querying real,
+known records (a specific user's email) and confirming an exact match
+against the original host database, not merely by the absence of a fatal
+error during restore.
+
+### Healthcheck Precision: `ping` vs Port Connectivity
+
+**Symptom:** `notification-service` and `analytics-service` crashed with
+`ECONNREFUSED` connecting to RabbitMQ, even after adding a
+`depends_on: rabbitmq: condition: service_healthy` dependency with a
+healthcheck using `rabbitmq-diagnostics -q ping`.
+
+**Root cause:** `ping` verifies that RabbitMQ's Erlang node process is
+responsive, but does not verify that RabbitMQ has finished its boot
+sequence and opened its actual AMQP network listener (port 5672) - two
+genuinely different milestones in RabbitMQ's startup, confirmed directly
+in its own logs (the node responds to `ping`-equivalent checks before the
+line `started TCP listener on [::]:5672` appears).
+
+**Resolution:** switched the healthcheck to
+`rabbitmq-diagnostics check_port_connectivity`, which specifically
+verifies the configured network ports are open and accepting connections,
+combined with a `start_period` grace window. Verified directly: RabbitMQ's
+own connection log (`accepting AMQP connection`, `authenticated and
+granted access to vhost '/'`) now shows successful connections from both
+consumer services immediately following the healthcheck passing, with
+zero connection-refused errors.
