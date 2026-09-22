@@ -10,6 +10,7 @@ interface AttendanceLowPayload {
   studentUserId: string;
   courseId: string;
   attendancePercentage: number;
+  status: string;
 }
 
 export async function startConsumer(): Promise<void> {

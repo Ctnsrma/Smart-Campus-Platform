@@ -48,10 +48,10 @@ export function createApp() {
       const presentCount = allRecordsForCourse.filter((r) => r.status === "PRESENT").length;
       const attendancePercentage = Math.round((presentCount / allRecordsForCourse.length) * 100);
 
-      await publishEvent("attendance.marked", { studentUserId, courseId, attendancePercentage });
+      await publishEvent("attendance.marked", { studentUserId, courseId, status, attendancePercentage });
 
       if (attendancePercentage < LOW_ATTENDANCE_THRESHOLD) {
-        await publishEvent("attendance.low", { studentUserId, courseId, attendancePercentage });
+        await publishEvent("attendance.low", { studentUserId, courseId, status, attendancePercentage });
       }
 
       res.status(201).json({ record: created, attendancePercentage });
