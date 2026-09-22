@@ -9,6 +9,6 @@ export async function getTestToken(email: string, password: string): Promise<str
     throw new Error(`Login failed with status ${response.status} - is auth-service running on port 3001?`);
   }
 
-  const body = await response.json();
+  const body = (await response.json()) as { accessToken: string };
   return body.accessToken;
 }

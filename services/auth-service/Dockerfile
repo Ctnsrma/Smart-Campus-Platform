@@ -1,5 +1,5 @@
 # Build Stage
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 WORKDIR /app
 
 COPY package.json package-lock.json tsconfig.base.json ./
@@ -13,7 +13,7 @@ COPY services/auth-service ./services/auth-service
 RUN npm run build --workspace=@smart-campus/auth-service
 
 # Runtime stage
-FROM node:20-alpine AS runtime
+FROM node:22-alpine AS runtime
 WORKDIR /app
 
 COPY package.json package-lock.json ./
