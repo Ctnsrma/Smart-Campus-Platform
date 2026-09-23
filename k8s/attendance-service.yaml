@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: attendance-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: attendance-service
+  template:
+    metadata:
+      labels:
+        app: attendance-service
+    spec:
+      containers:
+        - name: attendance-service
+          image: smart-campus-platform-attendance-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3004
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: shared-secrets
+                  key: ATTENDANCE_DATABASE_URL
+            - name: JWT_ACCESS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: shared-secrets
+                  key: JWT_ACCESS_SECRET
+            - name: RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: shared-secrets
+                  key: RABBITMQ_URL
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: attendance-service
+spec:
+  selector:
+    app: attendance-service
+  ports:
+    - port: 3004
+      targetPort: 3004
