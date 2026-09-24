@@ -1,4 +1,3 @@
-// services/api-gateway/tests/gateway.test.ts
 import { describe, it, expect, afterAll } from "vitest";
 
 const GATEWAY_URL = "http://localhost:3000";

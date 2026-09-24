@@ -9,10 +9,16 @@ pipeline {
             }
         }
 
-        stage('Verify Environment') {
+        stage('Install & Test') {
+            agent {
+                docker {
+                    image 'node:22-alpine'
+                    reuseNode true
+                }
+            }
             steps {
-                sh 'node --version'
-                sh 'npm --version'
+                sh 'npm install'
+                sh 'npm run test:unit --workspace=@smart-campus/auth-service'
             }
         }
     }
