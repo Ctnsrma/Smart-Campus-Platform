@@ -32,7 +32,7 @@ pipeline {
 
         stage('Security Scan') {
             steps {
-                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy_cache:/root/.cache/ aquasec/trivy:latest image --timeout 15m --severity HIGH,CRITICAL --exit-code 0 ${IMAGE_TAG}"
+               sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy_cache:/root/.cache/ aquasec/trivy:latest image --db-repository public.ecr.aws/aquasecurity/trivy-db --timeout 15m --severity HIGH,CRITICAL --exit-code 0 ${IMAGE_TAG}"
             }
         }
     }
