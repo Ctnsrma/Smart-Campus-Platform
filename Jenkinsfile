@@ -35,5 +35,15 @@ pipeline {
                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy_cache:/root/.cache/ aquasec/trivy:latest image --db-repository public.ecr.aws/aquasecurity/trivy-db --timeout 15m --severity HIGH,CRITICAL --exit-code 0 ${IMAGE_TAG}"
             }
         }
+        stage('Deploy') {
+            steps {
+                sh "k3d image import ${IMAGE_TAG} -c smart-campus"
+                sh """
+                    docker run --rm -v jenkins_home:/var/jenkins_home -e KUBECONFIG=/var/jenkins_home/.kube-config bitnami/kubectl:latest \
+                        --server=https://host.docker.internal:53615 --insecure-skip-tls-verify \
+                        set image deployment/auth-service auth-service=${IMAGE_TAG}
+                """
+            }
+        }
     }
 }
