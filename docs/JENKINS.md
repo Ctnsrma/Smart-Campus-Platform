@@ -141,3 +141,61 @@ real Git checkout from GitHub followed by dependency installation and
 execution of Auth Service's dependency-free unit test suite (9 tests,
 all passing) inside an isolated, temporary Docker container - confirmed
 with a genuine `Finished: SUCCESS` pipeline result.
+
+
+## Full Pipeline: Build and Security Scan
+
+Extended the pipeline with two further stages, following the original
+architecture document's intended sequence (checkout → install/test →
+build → scan → deploy).
+
+### Docker Build Stage
+
+Runs `docker build` directly as a Jenkins shell step (not nested inside
+another `docker run`), tagging the image with `${env.BUILD_NUMBER}` (a
+built-in, auto-incrementing Jenkins variable) rather than a fixed tag, so
+each pipeline run produces a distinctly identifiable image. Confirmed
+this works correctly using Jenkins' own checked-out workspace as the
+build context with no volume-mounting workaround needed - unlike the
+bind-mount problem documented above, `docker build`'s context is read
+directly by the CLI process itself (running inside the Jenkins
+container, with real access to the checked-out files) rather than
+requiring the host daemon to independently resolve a path, which is why
+this specific operation does not hit the same container-in-container
+path-resolution issue.
+
+### Security Scan Stage (Trivy)
+
+Runs Trivy against the freshly-built image, using the host's Docker
+socket. Two further issues resolved:
+
+**Slow/unreliable default vulnerability database mirror**: the default
+database source (accessed via `mirror.gcr.io`) repeatedly failed or
+stalled significantly below a usable transfer rate (confirmed directly:
+~106 KiB/s sustained, reaching only 79% after a 15-minute timeout).
+Resolved by specifying `--db-repository public.ecr.aws/aquasecurity/trivy-db`,
+an officially documented, AWS-hosted alternative mirror, which completed
+reliably.
+
+**Database persistence across pipeline runs**: added a named volume
+(`trivy_cache`) mounted to Trivy's cache directory, so the multi-hundred-megabyte
+vulnerability database downloads once and is reused by subsequent
+pipeline runs, rather than being re-fetched on every single build - the
+same persistence principle already applied to `jenkins_home` and
+`postgres_data` elsewhere in this project.
+
+**Scan policy**: `--exit-code 0` deliberately reports findings without
+failing the build. A real scan of `auth-service`'s image identified 3
+HIGH-severity CVEs, all in the base `node:22-alpine` image's underlying
+`glibc` packages (not in the project's own application code or npm
+dependencies) - a realistic, common finding for any project built on a
+public base image, and exactly the kind of result this stage is meant to
+surface for review, without blocking the pipeline on a base-image issue
+outside the project's direct control to fix immediately.
+
+## Verified
+
+The full pipeline - checkout, unit tests, Docker image build, and a real
+Trivy vulnerability scan against that built image - completes end to end
+with `Finished: SUCCESS`, producing a genuinely tagged, scanned container
+image on every run.
