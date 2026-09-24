@@ -199,3 +199,34 @@ The full pipeline - checkout, unit tests, Docker image build, and a real
 Trivy vulnerability scan against that built image - completes end to end
 with `Finished: SUCCESS`, producing a genuinely tagged, scanned container
 image on every run.
+
+
+## Full Pipeline Completed: Checkout → Test → Build → Scan → Deploy
+
+Following up on the earlier "Documented Limitation" section: `k3d` was
+successfully installed inside the Jenkins container using its official
+install script (`raw.githubusercontent.com`), which completed in
+seconds - a stark contrast to the slow/unreliable downloads hit
+repeatedly this session from other sources (npm registry, Trivy's
+default database mirror, a raw `kubectl` binary release, and a
+Kubernetes-specific apt repository). This is itself a useful, concrete
+lesson: when a download is unreliable, trying a genuinely different
+source is often more productive than increasing timeouts or retry counts
+on the same struggling one.
+
+With `k3d` available, the real Deploy stage became straightforward:
+`k3d image import` (identical to the manual command used throughout
+docs/KUBERNETES.md) followed by `kubectl set image deployment/auth-service
+auth-service=<tag>` (using the same `bitnami/kubectl` container and
+`host.docker.internal` addressing already proven earlier in this
+document, triggering a genuine Kubernetes rolling update.
+
+Verified directly: after a pipeline run, `kubectl get deployment
+auth-service -o jsonpath="{.spec.template.spec.containers[0].image}"`
+returned the exact image tag corresponding to that specific build number
+- confirmed real, not merely a command executing without error.
+
+The complete pipeline (Checkout, Install & Test, Build Docker Image,
+Security Scan, Deploy) now runs end to end automatically from a single
+trigger, fulfilling the full CI/CD sequence described in the original
+architecture document's Section 12.
