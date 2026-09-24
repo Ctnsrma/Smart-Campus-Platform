@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_TAG = "smart-campus-platform-auth-service:${env.BUILD_NUMBER}"
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -17,6 +21,18 @@ pipeline {
                         npm run test:unit --workspace=@smart-campus/auth-service
                     "
                 '''
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -f services/auth-service/Dockerfile -t ${IMAGE_TAG} ."
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL --exit-code 0 ${IMAGE_TAG}"
             }
         }
     }
