@@ -10,15 +10,13 @@ pipeline {
         }
 
         stage('Install & Test') {
-            agent {
-                docker {
-                    image 'node:22-alpine'
-                    reuseNode true
-                }
-            }
             steps {
-                sh 'npm install'
-                sh 'npm run test:unit --workspace=@smart-campus/auth-service'
+                sh '''
+                    docker run --rm -v "$WORKSPACE":/app -w /app node:22-alpine sh -c "
+                        npm install &&
+                        npm run test:unit --workspace=@smart-campus/auth-service
+                    "
+                '''
             }
         }
     }
