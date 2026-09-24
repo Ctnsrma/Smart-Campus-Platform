@@ -11,10 +11,8 @@ pipeline {
 
         stage('Install & Test') {
             steps {
-                sh 'pwd'
-                sh 'ls -la'
                 sh '''
-                    docker run --rm -v "$WORKSPACE":/app -w /app node:22-alpine sh -c "
+                    docker run --rm -v jenkins_home:/var/jenkins_home -w /var/jenkins_home/workspace/smart-campus-pipeline node:22-alpine sh -c "
                         npm install &&
                         npm run test:unit --workspace=@smart-campus/auth-service
                     "
