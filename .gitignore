@@ -22,3 +22,7 @@ dist/
 
 *.sql
 !**/drizzle/**/*.sql
+
+terraform/.terraform/
+*.tfstate
+*.tfstate.*
