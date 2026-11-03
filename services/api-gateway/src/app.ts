@@ -1,10 +1,17 @@
+import cors from "cors";
 import "dotenv/config";
 import express, { Request, Response } from "express";
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 export function createApp() {
   const app = express();
-  
+
+  app.use(cors(
+    { 
+      origin: process.env.CORS_ORIGIN || "http://localhost:5173"
+    }
+  ));
+
   app.get("/health", (_req: Request, res: Response) => {
     res.status(200).json({
       status: "ok",
