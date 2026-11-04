@@ -58,5 +58,30 @@ export function createApp() {
     },
   );
 
+  app.get("/attendance/me", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const studentUserId = req.user!.sub;
+  const records = await db
+    .select()
+    .from(attendanceRecords)
+    .where(eq(attendanceRecords.studentUserId, studentUserId));
+
+  const byCourse = new Map<string, { total: number; present: number }>();
+  for (const r of records) {
+    const entry = byCourse.get(r.courseId) ?? { total: 0, present: 0 };
+    entry.total += 1;
+    if (r.status === "PRESENT") entry.present += 1;
+    byCourse.set(r.courseId, entry);
+  }
+
+  const courses = Array.from(byCourse.entries()).map(([courseId, { total, present }]) => ({
+    courseId,
+    total,
+    present,
+    attendancePercentage: Math.round((present / total) * 100),
+  }));
+
+  res.status(200).json({ courses });
+});
+
   return app;
 }

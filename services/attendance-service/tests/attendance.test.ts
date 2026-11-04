@@ -106,3 +106,35 @@ describe("POST /attendance/mark", () => {
     expect(dropped.body.attendancePercentage).toBeLessThan(75);
   });
 });
+
+describe("GET /attendance/me", () => {
+  it("returns the caller's own per-course percentage", async () => {
+    const courseId = crypto.randomUUID();
+    await markAttendance(facultyToken, courseId, "PRESENT");
+    await markAttendance(facultyToken, courseId, "ABSENT");
+
+    const studentToken = await login(studentEmail, testPassword);
+    const res = await fetch("http://localhost:3004/attendance/me", {
+      headers: { Authorization: `Bearer ${studentToken}` },
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    const entry = body.courses.find((c: { courseId: string }) => c.courseId === courseId);
+    expect(entry).toEqual({ courseId, total: 2, present: 1, attendancePercentage: 50 });
+  });
+
+  it("returns nothing for a different user, proving identity comes from the token", async () => {
+    const res = await fetch("http://localhost:3004/attendance/me", {
+      headers: { Authorization: `Bearer ${facultyToken}` },
+    });
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.courses).toEqual([]);
+  });
+
+  it("rejects a request with no token", async () => {
+    const res = await fetch("http://localhost:3004/attendance/me");
+    expect(res.status).toBe(401);
+  });
+});
