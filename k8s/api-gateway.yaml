@@ -27,6 +27,10 @@ spec:
               value: "http://course-service:3003"
             - name: ATTENDANCE_SERVICE_URL
               value: "http://attendance-service:3004"
+            - name: NOTIFICATION_SERVICE_URL
+              value: "http://notification-service:3005"
+            - name: ANALYTICS_SERVICE_URL
+              value: "http://analytics-service:3006"
           readinessProbe:
             httpGet:
               path: /health

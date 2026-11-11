@@ -52,5 +52,21 @@ app.use(
   }),
 );
 
+  app.use(
+    createProxyMiddleware({
+      target: process.env.NOTIFICATION_SERVICE_URL,
+      changeOrigin: true,
+      pathFilter: "/notifications",
+    }),
+  );
+
+  app.use(
+    createProxyMiddleware({
+      target: process.env.ANALYTICS_SERVICE_URL,
+      changeOrigin: true,
+      pathFilter: "/analytics",
+    }),
+  );
+
   return app;
 }

@@ -62,4 +62,21 @@ describe("API Gateway routing", () => {
     const res = await fetch(`${GATEWAY_URL}/students/me`);
     expect(res.status).toBe(401);
   });
+    it("forwards GET /notifications/me to Notification Service", async () => {
+    const res = await fetch(`${GATEWAY_URL}/notifications/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const body = (await res.json()) as { notifications: unknown[] };
+    expect(res.status).toBe(200);
+    expect(body.notifications).toEqual([]);
+  });
+
+  it("forwards GET /analytics/me to Analytics Service", async () => {
+    const res = await fetch(`${GATEWAY_URL}/analytics/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const body = (await res.json()) as { courses: unknown[] };
+    expect(res.status).toBe(200);
+    expect(body.courses).toEqual([]);
+  });
 });

@@ -102,11 +102,15 @@ services:
       STUDENT_SERVICE_URL: http://student-service:3002
       COURSE_SERVICE_URL: http://course-service:3003
       ATTENDANCE_SERVICE_URL: http://attendance-service:3004
+      NOTIFICATION_SERVICE_URL: http://notification-service:3005
+      ANALYTICS_SERVICE_URL: http://analytics-service:3006
     depends_on:
       - auth-service
       - student-service
       - course-service
       - attendance-service
+      - notification-service
+      - analytics-service
     
   postgres:
     image: postgres:16    # image: postgres:16 instead of build: ... — tells Compose "pull this pre-built image from Docker Hub," rather than building one from a Dockerfile we wrote
