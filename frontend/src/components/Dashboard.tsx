@@ -1,3 +1,4 @@
+import NotificationsPanel from "./NotificationsPanel";
 import { useEffect, useState } from "react";
 import { api, ApiError, type Course, type CourseAttendance } from "../api";
 import { decodeClaims } from "../auth";
@@ -99,6 +100,13 @@ export default function Dashboard({ token, onLogout }: { token: string; onLogout
               </tbody>
             </table>
           </div>
+        )}
+        {claims.role === "STUDENT" && (
+          <NotificationsPanel
+            token={token}
+            onUnauthorized={onLogout}
+            courseCode={(id) => byId.get(id)?.code ?? "Unknown course"}
+          />
         )}
       </main>
     </div>

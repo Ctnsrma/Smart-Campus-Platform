@@ -25,6 +25,15 @@ export interface Course {
   department: string;
 }
 
+export interface AppNotification {
+  id: string;
+  courseId: string;
+  attendancePercentage: number;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+
 async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
   const res = await fetch(`${API}${path}`, {
     ...options,
@@ -50,4 +59,7 @@ export const api = {
     request<Session>("/auth/login", { method: "POST", body: credentials(email, password) }),
   myAttendance: (token: string) => request<{ courses: CourseAttendance[] }>("/attendance/me", {}, token),
   courses: (token: string) => request<{ courses: Course[] }>("/courses", {}, token),
+    notifications: (token: string) => request<{ notifications: AppNotification[] }>("/notifications/me", {}, token),
+  markRead: (token: string, id: string) =>
+    request<{ notification: AppNotification }>(`/notifications/${id}/read`, { method: "PATCH" }, token),
 };
