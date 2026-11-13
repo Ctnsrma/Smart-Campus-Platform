@@ -1,9 +1,9 @@
 import "dotenv/config";
 import express, { Request, Response } from "express";
-import { eq } from "drizzle-orm";
+import { eq,asc } from "drizzle-orm";
 import { db } from "./db/client";
 import { students } from "./db/schema";
-import { requireAuth, AuthenticatedRequest } from "./middleware/auth";
+import { requireAuth, AuthenticatedRequest,requireRole } from "./middleware/auth";
 import { createProfileSchema } from "./validation/schemas";
 
 export function createApp() {
@@ -53,6 +53,23 @@ export function createApp() {
 
     res.status(200).json({ student: profile });
   });
+    app.get(
+    "/students",
+    requireAuth,
+    requireRole("FACULTY", "ADMIN"),
+    async (_req: AuthenticatedRequest, res: Response) => {
+      const rows = await db
+        .select({
+          userId: students.userId,
+          fullName: students.fullName,
+          department: students.department,
+          semester: students.semester,
+        })
+        .from(students)
+        .orderBy(asc(students.fullName));
+      res.status(200).json({ students: rows });
+    },
+  );
 
   return app;
 }
