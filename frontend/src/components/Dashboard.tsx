@@ -1,4 +1,5 @@
 import NotificationsPanel from "./NotificationsPanel";
+import FacultyPanel from "./FacultyPanel";
 import { useEffect, useState } from "react";
 import { api, ApiError, type Course, type CourseAttendance } from "../api";
 import { decodeClaims } from "../auth";
@@ -47,11 +48,11 @@ export default function Dashboard({ token, onLogout }: { token: string; onLogout
       </header>
 
       <main className="mx-auto max-w-3xl p-6">
-        <h2 className="mb-4 text-lg font-semibold text-slate-900">My attendance</h2>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        {claims.role !== "STUDENT" && (
-          <p className="text-sm text-slate-500">Faculty tools arrive in the next step.</p>
+        {claims.role === "STUDENT" && (
+          <h2 className="mb-4 text-lg font-semibold text-slate-900">My attendance</h2>
         )}
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        {claims.role !== "STUDENT" && <FacultyPanel token={token} onUnauthorized={onLogout} />}
         {claims.role === "STUDENT" && rows === null && !error && (
           <p className="text-sm text-slate-500">Loading...</p>
         )}

@@ -34,6 +34,22 @@ export interface AppNotification {
   createdAt: string;
 }
 
+export interface Student {
+  userId: string;
+  fullName: string;
+  department: string;
+  semester: number;
+}
+export interface MarkResult {
+  attendancePercentage: number;
+}
+export interface CourseSummary {
+  courseId: string;
+  studentsTracked: number;
+  averageAttendance: number;
+  studentsBelowThreshold: number;
+}
+
 async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
   const res = await fetch(`${API}${path}`, {
     ...options,
@@ -62,4 +78,11 @@ export const api = {
     notifications: (token: string) => request<{ notifications: AppNotification[] }>("/notifications/me", {}, token),
   markRead: (token: string, id: string) =>
     request<{ notification: AppNotification }>(`/notifications/${id}/read`, { method: "PATCH" }, token),
+    students: (token: string) => request<{ students: Student[] }>("/students", {}, token),
+  createCourse: (token: string, data: { code: string; title: string; department: string }) =>
+    request<{ course: Course }>("/courses", { method: "POST", body: JSON.stringify(data) }, token),
+  markAttendance: (token: string, studentUserId: string, courseId: string, status: "PRESENT" | "ABSENT") =>
+    request<MarkResult>("/attendance/mark", { method: "POST", body: JSON.stringify({ studentUserId, courseId, status }) }, token),
+  courseSummary: (token: string, courseId: string) =>
+    request<CourseSummary>(`/analytics/courses/${courseId}/summary`, {}, token),
 };
