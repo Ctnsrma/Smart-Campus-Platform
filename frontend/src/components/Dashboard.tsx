@@ -52,7 +52,7 @@ export default function Dashboard({ token, onLogout }: { token: string; onLogout
           <h2 className="mb-4 text-lg font-semibold text-slate-900">My attendance</h2>
         )}
         {error && <p className="text-sm text-red-600">{error}</p>}
-        {claims.role !== "STUDENT" && <FacultyPanel token={token} onUnauthorized={onLogout} />}
+          {claims.role !== "STUDENT" && <FacultyPanel token={token} onUnauthorized={onLogout} />}
         {claims.role === "STUDENT" && rows === null && !error && (
           <p className="text-sm text-slate-500">Loading...</p>
         )}
